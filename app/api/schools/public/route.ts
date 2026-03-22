@@ -17,6 +17,7 @@ export async function GET() {
     return NextResponse.json(data || [])
   } catch (error) {
     console.error('Error fetching schools:', error)
-    return NextResponse.json({ error: 'Failed to fetch schools' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Failed to fetch schools'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

@@ -27,6 +27,7 @@ export default function VotingLoginPage() {
   const router = useRouter()
   const [schools, setSchools] = useState<School[]>([])
   const [schoolsLoading, setSchoolsLoading] = useState(true)
+  const [schoolsError, setSchoolsError] = useState('')
   const [students, setStudents] = useState<Student[]>([])
   const [search, setSearch] = useState('')
   const [schoolSlug, setSchoolSlug] = useState('')
@@ -54,9 +55,19 @@ export default function VotingLoginPage() {
 
   const fetchSchools = async () => {
     try {
+      setSchoolsError('')
       const schoolFromUrl = new URLSearchParams(window.location.search).get('school')
       const res = await fetch('/api/schools/public', { cache: 'no-store' })
-      if (!res.ok) throw new Error('Failed to fetch schools')
+      if (!res.ok) {
+        let message = 'Failed to fetch schools'
+        try {
+          const payload = await res.json()
+          if (payload?.error) message = payload.error
+        } catch {
+          // Keep default message if response body is not JSON.
+        }
+        throw new Error(message)
+      }
       const data: School[] = await res.json()
       setSchools(data)
 
@@ -65,6 +76,7 @@ export default function VotingLoginPage() {
       }
     } catch (fetchError) {
       console.error('Error fetching schools:', fetchError)
+      setSchoolsError(fetchError instanceof Error ? fetchError.message : 'Failed to fetch schools')
     } finally {
       setSchoolsLoading(false)
     }
@@ -160,6 +172,9 @@ export default function VotingLoginPage() {
                 </select>
                 {!schoolsLoading && schools.length === 0 && (
                   <p className="text-xs text-muted-foreground mt-2">No registered schools found yet.</p>
+                )}
+                {schoolsError && (
+                  <p className="text-xs text-red-600 mt-2">Could not load schools: {schoolsError}</p>
                 )}
                 {selectedSchool && !selectedSchool.portal_live && (
                   <p className="text-xs text-amber-700 mt-2">
